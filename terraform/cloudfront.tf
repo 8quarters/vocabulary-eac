@@ -1,5 +1,5 @@
 locals {
-  s3_origin_id = "S3-UI-Origin"
+  s3_origin_id  = "S3-UI-Origin"
   alb_origin_id = "EKS-ALB-Origin"
 }
 
@@ -22,7 +22,7 @@ resource "aws_cloudfront_distribution" "main" {
   # 2. ALB Origin (For EKS Backend /api requests)
   # ---------------------------------------------------------------------------
   origin {
-    domain_name = aws_alb.eks_alb.dns_name
+    domain_name = aws_lb.eks_alb.dns_name
     origin_id   = local.alb_origin_id
 
     custom_origin_config {
@@ -43,7 +43,7 @@ resource "aws_cloudfront_distribution" "main" {
     cached_methods         = ["GET", "HEAD"]
 
     # Use CachingOptimized managed policy
-    cache_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6" 
+    cache_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6"
 
     compress = true
   }
@@ -60,10 +60,10 @@ resource "aws_cloudfront_distribution" "main" {
     cached_methods         = ["GET", "HEAD"]
 
     # Use CachingDisabled managed policy so dynamic API calls aren't cached
-    cache_policy_id          = "4135ea2d-6df8-44a3-9cd3-4b5da47900b1"
-    
+    cache_policy_id = "4135ea2d-6df8-44a3-9cd3-4b5da47900b1"
+
     # Forward all headers, cookies, and query strings required by backend APIs
-    origin_request_policy_id = "216adef6-5c7f-4794-b0ae-bb23c99b24f4" 
+    origin_request_policy_id = "216adef6-5c7f-4794-b0ae-bb23c99b24f4"
   }
 
   restrictions {
@@ -82,7 +82,7 @@ resource "aws_cloudfront_distribution" "main" {
 # -----------------------------------------------------------------------------
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "s3-oac-dev"
-  description                       = "OAC for UI S3 bucket"
+  description                       = "OAC for UI bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
