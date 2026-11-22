@@ -71,7 +71,7 @@ variable "eks_public_access_cidrs" {
   description = "CIDRs allowed to call the public EKS API. Set to an empty list to keep the API private."
   type        = list(string)
   default = [
-    "49.0.0.0/8"
+    "0.0.0.0/0"
   ]
 }
 
