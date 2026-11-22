@@ -1,4 +1,4 @@
-name: Terraform K8s Destroy
+name: Cluster - Destroy
 
 on:
   repository_dispatch:
