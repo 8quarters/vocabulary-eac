@@ -258,11 +258,6 @@ resource "aws_acm_certificate_validation" "cloudfront" {
   validation_record_fqdns = [for record in aws_route53_record.cloudfront_cert_validation : record.fqdn]
 }
 
-import {
-  to = aws_route53_record.cloudfront_rec
-  id = "Z01908031YLBTJZ2HZLNZ_yuvarajaws.in_A"
-}
-
 resource "aws_route53_record" "cloudfront_rec" {
   zone_id = "Z01908031YLBTJZ2HZLNZ"
   name    = "yuvarajaws.in"
