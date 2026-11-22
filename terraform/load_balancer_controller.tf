@@ -101,7 +101,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 }
 
 resource "kubectl_manifest" "vocabulary_api_target_group_binding" {
-  yaml_body = yamlencode({
+  manifest = {
     apiVersion = "elbv2.k8s.aws/v1beta1"
     kind       = "TargetGroupBinding"
     metadata = {
@@ -116,7 +116,7 @@ resource "kubectl_manifest" "vocabulary_api_target_group_binding" {
         port = 80
       }
     }
-  })
+  }
 
   depends_on = [helm_release.aws_load_balancer_controller]
 }
