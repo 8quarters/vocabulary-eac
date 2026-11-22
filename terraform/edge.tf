@@ -164,6 +164,7 @@ module "cdn" {
   enabled             = true
   default_root_object = "index.html"
   wait_for_deployment = true
+  aliases             = ["yuvarajaws.in"]
   #web_acl_id          = aws_wafv2_web_acl.cloudfront.arn
 
   origin_access_control = {
@@ -217,10 +218,61 @@ module "cdn" {
   ]
 
   viewer_certificate = {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate_validation.cloudfront.certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   tags = local.common_tags
+}
+
+resource "aws_acm_certificate" "cloudfront" {
+  provider          = aws.us_east_1
+  domain_name       = "yuvarajaws.in"
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_route53_record" "cloudfront_cert_validation" {
+  for_each = {
+    for option in aws_acm_certificate.cloudfront.domain_validation_options :
+    option.domain_name => option
+  }
+
+  zone_id         = "Z01908031YLBTJZ2HZLNZ"
+  name            = each.value.resource_record_name
+  type            = each.value.resource_record_type
+  records         = [each.value.resource_record_value]
+  ttl             = 60
+  allow_overwrite = true
+}
+
+resource "aws_acm_certificate_validation" "cloudfront" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.cloudfront.arn
+  validation_record_fqdns = [for record in aws_route53_record.cloudfront_cert_validation : record.fqdn]
+}
+
+import {
+  to = aws_route53_record.cloudfront_rec
+  id = "Z01908031YLBTJZ2HZLNZ_yuvarajaws.in_A"
+}
+
+resource "aws_route53_record" "cloudfront_rec" {
+  zone_id = "Z01908031YLBTJZ2HZLNZ"
+  name    = "yuvarajaws.in"
+  type    = "A"
+
+  alias {
+    name                   = module.cdn.cloudfront_distribution_domain_name
+    zone_id                = module.cdn.cloudfront_distribution_hosted_zone_id
+    evaluate_target_health = false
+  }
 }
 
 #resource "aws_pricingplanmanager_subscription" "cloudfront_free" {
