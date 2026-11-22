@@ -71,8 +71,9 @@ module "alb" {
     }
   }
 
-  # Targets are intentionally empty until the backend is deployed to EKS.
-  # A TargetGroupBinding can register pod IPs against this group later.
+  # The AWS Load Balancer Controller TargetGroupBinding in
+  # load_balancer_controller.tf registers backend pod IPs. Terraform owns
+  # this ALB and target group.
   target_groups = {
     api = {
       name              = "${substr(local.name, 0, 25)}-api-tg"
@@ -218,7 +219,7 @@ module "cdn" {
   viewer_certificate = {
     cloudfront_default_certificate = true
   }
-  
+
   tags = local.common_tags
 }
 
