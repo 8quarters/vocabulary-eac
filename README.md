@@ -1,3 +1,17 @@
+### Local set up
+
+```
+aws eks list-clusters
+
+aws eks update-kubeconfig --name vocabulary-dev-eks
+
+kubectl get pods
+
+kubectl get nodes
+
+
+```
+
 
 ### Remove a Node from Cluster and ASG. Keep it in isolated state.
 ```
@@ -10,3 +24,5 @@ aws autoscaling detach-instances \
   --should-decrement-desired-capacity
 kubectl delete node ip-10-1-4-196.ec2.internal
 ```
+
+
