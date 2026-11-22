@@ -1,0 +1,71 @@
+name: Cluster - Set Up
+
+on:
+  push:
+    branches:
+      - mainx  # Change this to your main branch name if different
+  repository_dispatch:
+    types: [trigger-k8s-set-up]
+  workflow_dispatch:
+
+jobs:
+  k8s-setup:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Init K8s and Helm
+      run: |
+        aws eks update-kubeconfig --region us-east-1 --name vocabulary-dev-eks
+        # Install Kubectl
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+        kubectl version --client
+
+    - name: Create application configuration
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        set -euo pipefail
+
+        CLOUDFRONT_DOMAIN="$(aws cloudfront list-distributions --query "DistributionList.Items[0].DomainName" --output text)"
+        if [[ -z "$CLOUDFRONT_DOMAIN" || "$CLOUDFRONT_DOMAIN" == "None" ]]; then
+          echo "No CloudFront distribution domain was returned."
+          exit 1
+        fi
+
+        kubectl create secret generic aws-access-key-id \
+          --from-literal=AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+          --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create secret generic aws-secret-access-key \
+          --from-literal=AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+          --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create configmap vocabulary-api-config \
+          --from-literal=APP_CORS_ALLOWED_ORIGINS="$CLOUDFRONT_DOMAIN" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Where am I?
+      run: |
+        echo "Current directory: $(pwd)"
+        ls -l
+        ls -R
+
+    - name: Init App
+      run: |
+        cd k8s
+        kubectl apply -f service.yaml
+        kubectl apply -f service-account.yaml
+        kubectl apply -f deployment.yaml
+        kubectl apply -f ingress.yaml
+        sleep 60

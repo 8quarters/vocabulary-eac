@@ -1,0 +1,46 @@
+name: Terraform K8s Destroy
+
+on:
+  repository_dispatch:
+    types: [trigger-tf-k8s-destroy]
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: k8s
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Init Kubernetes and Kubectl
+      run: |
+        set -euo pipefail
+
+        aws eks update-kubeconfig --region us-east-1 --name vocabulary-dev-eks
+
+        curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+        kubectl version --client
+
+    - name: Destroy Kubernetes Application
+      run: |
+        set -euo pipefail
+
+        kubectl delete -f ingress.yaml --ignore-not-found=true
+        kubectl delete -f deployment.yaml --ignore-not-found=true
+        kubectl delete -f service.yaml --ignore-not-found=true
+        kubectl delete -f service-account.yaml --ignore-not-found=true
+        kubectl delete secret aws-access-key-id --ignore-not-found=true
+        kubectl delete secret aws-secret-access-key --ignore-not-found=true
+        kubectl delete configmap vocabulary-api-config --ignore-not-found=true
