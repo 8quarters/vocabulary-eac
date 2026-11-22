@@ -39,7 +39,7 @@ jobs:
       run: |
         set -euo pipefail
 
-        CLOUDFRONT_DOMAIN="$(aws cloudfront list-distributions --query "DistributionList.Items[0].DomainName" --output text)"
+        CLOUDFRONT_DOMAIN=https://"$(aws cloudfront list-distributions --query "DistributionList.Items[0].DomainName" --output text)"
         if [[ -z "$CLOUDFRONT_DOMAIN" || "$CLOUDFRONT_DOMAIN" == "None" ]]; then
           echo "No CloudFront distribution domain was returned."
           exit 1
